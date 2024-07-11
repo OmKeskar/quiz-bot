@@ -29,24 +29,53 @@ def generate_bot_responses(message, session):
 
 
 def record_current_answer(answer, current_question_id, session):
-    '''
-    Validates and stores the answer for the current question to django session.
-    '''
+    if not answer:
+        return False, "Answer cannot be empty."
+
+    answers = session.get("answers", {})
+    answers[current_question_id] = answer
+    session["answers"] = answers
+
     return True, ""
 
 
 def get_next_question(current_question_id):
-    '''
-    Fetches the next question from the PYTHON_QUESTION_LIST based on the current_question_id.
-    '''
+    if current_question_id is None:
+        return PYTHON_QUESTION_LIST[0], 0
 
-    return "dummy question", -1
+    current_index = current_question_id
+
+    next_index = current_index + 1
+
+    if next_index < len(PYTHON_QUESTION_LIST):
+        return PYTHON_QUESTION_LIST[next_index], next_index
+    else:
+        return "dummy question", -1
 
 
 def generate_final_response(session):
-    '''
-    Creates a final result message including a score based on the answers
-    by the user for questions in the PYTHON_QUESTION_LIST.
-    '''
+    answers = session.get("answers", {})
 
-    return "dummy result"
+    score = 0
+
+    for idx, question in enumerate(PYTHON_QUESTION_LIST):
+        correct_answer = question.get("correct_answer")
+        user_answer = answers.get(idx)
+
+        if user_answer == correct_answer:
+            score += 1
+
+    total_questions = len(PYTHON_QUESTION_LIST)
+
+    result_message = f"Your score: {score} out of {total_questions}.\n"
+
+    for idx, question in enumerate(PYTHON_QUESTION_LIST):
+        correct_answer = question.get("correct_answer")
+        user_answer = answers.get(idx)
+        question_text = question.get("question")
+
+        result_message += f"\nQuestion {idx + 1}: {question_text}\n"
+        result_message += f"Your answer: {user_answer}\n"
+        result_message += f"Correct answer: {correct_answer}\n"
+
+    return result_message
